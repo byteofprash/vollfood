@@ -1,16 +1,19 @@
 <template>
   <section class="section">
     <h1 class="title"> {{ingredient.title}} </h1>
-    <div class="columns is-mobile">
-      <card
-        title="Ingredients"
-      >
+    <div class="tile box">
+      <h3> Tags: </h3>
+      <template v-for="tag in tags">
+        <span tag="href">  <a href="#" class="tag-item"> #{{tag}} </a> </span>
+      </template>
+      <br/>
+    </div>
+    <div class="tile is-mobile">
+      <card title="Ingredients" >
         <nuxt-content :document="ingredient" /> 
       </card>
 
-      <card
-        title="Procedure"
-      >
+      <card title="Procedure" >
         <nuxt-content :document="procedure" /> 
       </card>
 
@@ -38,9 +41,15 @@ export default {
       procedure: procedure
     }
   },
-  data (){
-    return {
-        title: ""
+  computed: {
+    tags: function(){
+      console.log(this.ingredient.tags.split(','))
+      return this.ingredient.tags.split(',')
+    }
+  },
+  methods: {
+    tagClicked(item){
+      console.log(item)
     }
   }
 }
@@ -65,5 +74,8 @@ export default {
     color: #DCDCDC !important;
     font-family: "Merriweather";
     text-align: center;
+}
+.tag-item a{
+    color: red;
 }
 </style>

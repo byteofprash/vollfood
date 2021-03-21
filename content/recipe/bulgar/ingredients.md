@@ -1,5 +1,7 @@
 ---
 title: Bulgar
+category: Carb
+cuisine: European
 description: Ingredients to make bulgar
 tags: something1, something2, something3
 cooktime: 15mins

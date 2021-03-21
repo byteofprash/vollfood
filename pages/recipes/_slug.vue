@@ -1,18 +1,20 @@
 <template>
   <section class="section">
-    <h1 class="title"> {{ingredient.title}} </h1>
-    <div class="columns is-mobile">
-            <nuxt-link to="/recipe/bulgar">
-            Bulgar
-            </nuxt-link>
+    <div class="columns box is-centered">
       <b-table :data="data">
         <b-table-column field="name" label="Name" v-slot="props">
-        <a :href="`/recipe/${props.row.name}`">
+        <nuxt-link :to="props.row.dir">
             {{props.row.name}}
-        </a>
+        </nuxt-link>
         </b-table-column>
         <b-table-column field="category" label="Category" v-slot="props">
             {{props.row.category}} 
+        </b-table-column>
+        <b-table-column field="tags" label="Tags" v-slot="props" width="250">
+          <nuxt-link v-for="tag in props.row.tags" :to="`/tag/${tag}`"> #{{tag}}</nuxt-link>
+        </b-table-column>
+        <b-table-column field="cuisine" label="Cuisine" v-slot="props">
+          <nuxt-link :to="`/cuisine/${props.row.cuisine}`"> {{props.row.cuisine}}</nuxt-link>
         </b-table-column>
         <b-table-column field="added_on" label="Added on" v-slot="props">
             {{props.row.added_on}} 
@@ -42,20 +44,6 @@ export default {
   },
   data (){
     return {
-        columns: [
-          { 
-            field: "name", 
-            label: "Name",
-          },
-          {
-            field: "category", 
-            label: "Category",
-          },
-          {
-            field: "added_on", 
-            label: "Added on",
-          }
-        ]
     }
   },
   computed: {
@@ -63,11 +51,16 @@ export default {
         console.log(this.ingredient, typeof(this.ingredient))
         var data = []
         for (var i=0; i < this.ingredient.length; i++){
-            data.push({"name": this.ingredient[i].title, "category": "Carb", "added_on": this.ingredient[i].createdAt, "dir": this.ingredient[i].dir})
+            data.push({"name": this.ingredient[i].title,
+                       "category": this.ingredient[i].category,
+                       "tags": this.ingredient[i].tags.split(','),
+                       "cuisine": this.ingredient[i].cuisine,
+                       "added_on": this.ingredient[i].createdAt,
+                       "dir": this.ingredient[i].dir})
         }
         console.log(data)
         return data
-      }
+      },
   },
 }
 </script>
