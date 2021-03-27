@@ -1,11 +1,15 @@
 <template>
   <section class="section">
+    <nuxt-link to="/recipes"> <span> all recipes </span> </nuxt-link>
     <h1 class="title"> {{ingredient.title}} </h1>
-    <div class="tile box">
+    <div class="tile box is-ancestor">
       <h3> Tags: </h3>
-      <template v-for="tag in tags">
-        <span tag="href">  <a href="#" class="tag-item"> #{{tag}} </a> </span>
-      </template>
+      <div class="tile is-10" >
+        <span v-for="tag in tags" tag="href">  <a href="#" class="tag-item"> #{{tag}} </a> </span>
+      </div>
+      <div class="tile">
+        Author: {{ingredient.author}}
+      </div>
       <br/>
     </div>
     <div class="tile is-mobile">
