@@ -9,10 +9,13 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
+    "@contentful/rich-text-html-renderer": "^14.1.2",
     "@nuxt/content": "^1.14.0",
+    "contentful": "^8.2.0",
     "core-js": "^3.9.1",
     "nuxt": "^2.15.3",
-    "nuxt-buefy": "^0.4.4"
+    "nuxt-buefy": "^0.4.4",
+    "v-viewer": "^1.5.1"
   },
   "devDependencies": {}
 }

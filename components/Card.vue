@@ -7,7 +7,7 @@
         </p>
       </header>
       <div class="card-content">
-        <div class="content has-text-centered">
+        <div class="content">
           <slot> </slot>
         </div>
       </div>
@@ -22,10 +22,16 @@ export default {
       type: String,
       required: true
     },
-    icon: {
-      type: String,
-      required: true
-    }
   }
 }
 </script>
+
+<style>
+.content {
+    text-align: left;
+ }
+.content ul li::before {
+  margin-right: 0.5rem;
+  color: #ff6f00;
+}
+</style>

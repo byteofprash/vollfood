@@ -1,4 +1,4 @@
-<template>
+.items<template>
   <section class="section">
     <div class="columns is-centered is-mobile">
       <b-table 
@@ -9,7 +9,7 @@
         default-sort="added_on"
         default-sort-direction="asc">
         <b-table-column field="name" label="Name" v-slot="props" sortable>
-        <nuxt-link :to="props.row.dir">
+        <nuxt-link :to="`/recipe/${props.row.entryId}`">
             {{props.row.name}}
         </nuxt-link>
         </b-table-column>
@@ -43,49 +43,65 @@
 
 <script>
 import Card from '~/components/Card'
+import {createClient} from '~/plugins/contentful.js'
+const client = createClient()
 
 export default {
 
   components: {
     Card
   },
-  async asyncData({$content, params, error}) {
-    const slug = params.slug || "index";
-    console.log(slug, "is slug");
-    const ingredient = await $content(`recipe`, { deep: true }).where({slug: 'ingredients'}).fetch()
-    console.log(ingredient)
+  data() {
     return {
-      ingredient: ingredient,
+      recipes: [],
     }
   },
-  data (){
-    return {
-    }
+  mounted() {
+    this.getEntries();
   },
   computed: {
-      data: function() {
-        console.log(this.ingredient, typeof(this.ingredient))
+    data: function() {
+      if (this.recipes) {
+        console.log(this.recipes, typeof(this.recipes))
         var data = []
-        for (var i=0; i < this.ingredient.length; i++){
-            data.push({"name": this.ingredient[i].title,
-                       "description": this.ingredient[i].description,
-                       "category": this.ingredient[i].category,
-                       "tags": this.ingredient[i].tags.split(','),
-                       "cuisine": this.ingredient[i].cuisine,
-                       "added_on": this.convertToDate(this.ingredient[i].createdAt),
-                        "dir": this.ingredient[i].dir})
+        for (var i = 0; i < this.recipes.length; i++) {
+          data.push({
+            "name": this.recipes[i].fields.title,
+            "description": this.recipes[i].fields.description,
+            "category": this.recipes[i].fields.category,
+            "tags": function(){
+                if(this.recipes[i].fields.tags){
+                    return this.recipes[i].fields.tags.split(',')
+                }
+                else{ return new Array}
+                },
+            "cuisine": this.recipes[i].fields.cuisine,
+            "added_on": this.convertToDate(this.recipes[i].sys.createdAt),
+            "entryId": this.recipes[i].sys.id
+          })
         }
         console.log(data)
         return data
-      },
+      }
+    },
   },
   methods: {
-    convertToDate(date_string){
+    convertToDate(date_string) {
       var unixtime = Date.parse(date_string);
       var created_date = new Date(unixtime);
       console.log(unixtime, created_date)
       return `${created_date.getFullYear()}-${created_date.getUTCMonth()}-${created_date.getDate()} ${created_date.getHours()}:${created_date.getMinutes()}:${created_date.getSeconds()}`
-    }
+    },
+    getEntries() {
+      client.getEntries({
+          content_type: "recipe"
+        })
+        .then((response) => {
+          console.log("Items:", response.items);
+          this.recipes = response.items
+        })
+        .catch(console.error)
+    },
   }
 }
 </script>
