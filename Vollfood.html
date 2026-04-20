@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vollfood — Family Cookbook</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #1A0E08; font-family: Helvetica Neue, Helvetica, Arial, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+  /* Outer stage */
+  #stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* Tweak panel */
+  #tweaks-panel {
+    display: none;
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: rgba(30,18,10,0.95);
+    border: 1px solid rgba(200,98,42,0.3);
+    border-radius: 16px;
+    padding: 16px;
+    z-index: 9999;
+    min-width: 220px;
+    backdrop-filter: blur(12px);
+    color: #FAF7F2;
+  }
+  #tweaks-panel h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #C8622A; margin-bottom: 14px; }
+  .tweak-row { margin-bottom: 12px; }
+  .tweak-label { font-size: 11px; color: rgba(250,247,242,0.6); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tweak-options { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tweak-btn {
+    padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid rgba(200,98,42,0.4); background: transparent; color: rgba(250,247,242,0.7);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tweak-btn.active { background: #C8622A; border-color: #C8622A; color: #fff; }
+  .tweak-btn:hover:not(.active) { border-color: #C8622A; color: #FAF7F2; }
+
+  /* Device label */
+  .device-label {
+    font-size: 11px; color: rgba(250,247,242,0.35); letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  input, button { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="device-root"></div>
+  <div class="device-label">Vollfood · Mobile Prototype</div>
+</div>
+
+<div id="tweaks-panel">
+  <h3>Tweaks</h3>
+  <div class="tweak-row">
+    <div class="tweak-label">Color Scheme</div>
+    <div class="tweak-options">
+      <button class="tweak-btn active" data-tweak="color" data-val="terracotta">Terracotta</button>
+      <button class="tweak-btn" data-tweak="color" data-val="green">Forest</button>
+      <button class="tweak-btn" data-tweak="color" data-val="dark">Dark</button>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <div class="tweak-label">Card Style</div>
+    <div class="tweak-options">
+      <button class="tweak-btn active" data-tweak="cards" data-val="rounded">Rounded</button>
+      <button class="tweak-btn" data-tweak="cards" data-val="sharp">Sharp</button>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <div class="tweak-label">Density</div>
+    <div class="tweak-options">
+      <button class="tweak-btn active" data-tweak="density" data-val="normal">Normal</button>
+      <button class="tweak-btn" data-tweak="density" data-val="compact">Compact</button>
+    </div>
+  </div>
+</div>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="vollfood-app.jsx"></script>
+
+<script type="text/babel">
+// ─── DEVICE WRAPPER + TWEAKS ─────────────────────────────────────────────────
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "color": "green",
+  "cards": "rounded",
+  "density": "normal"
+}/*EDITMODE-END*/;
+
+const COLOR_SCHEMES = {
+  terracotta: { primary:'#C8622A', primaryBg:'#FDF3EC', primarySoft:'#F0CDB8', bg:'#FAF7F2', surface:'#F5EDE3', border:'#EDE3D8', text:'#2A1810', mid:'#7D5A48', muted:'#B8967A', tabBg:'rgba(250,247,242,0.97)', darkMode: false },
+  green:      { primary:'#4E7C5E', primaryBg:'#EDF5F0', primarySoft:'#B8D8C4', bg:'#F5FAF6', surface:'#EBF4EE', border:'#D8EAE0', text:'#1A2E20', mid:'#4A6A54', muted:'#7A9A84', tabBg:'rgba(245,250,246,0.97)', darkMode: false },
+  dark:       { primary:'#E8A87C', primaryBg:'rgba(232,168,124,0.12)', primarySoft:'rgba(232,168,124,0.2)', bg:'#1A1209', surface:'#261A0E', border:'rgba(255,255,255,0.08)', text:'#FAF0E6', mid:'#C8A880', muted:'#806050', tabBg:'rgba(26,18,9,0.97)', darkMode: true },
+};
+
+function DeviceWrapper() {
+  const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+
+  // Apply color scheme globally
+  React.useEffect(() => {
+    const scheme = COLOR_SCHEMES[tweaks.color];
+    // Patch the C object
+    Object.assign(window.C || {}, scheme);
+  }, [tweaks.color]);
+
+  // Listen for tweak messages
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') {
+        document.getElementById('tweaks-panel').style.display = 'block';
+      }
+      if (e.data?.type === '__deactivate_edit_mode') {
+        document.getElementById('tweaks-panel').style.display = 'none';
+      }
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+    // Tweak button clicks
+    document.querySelectorAll('.tweak-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.tweak;
+        const val = btn.dataset.val;
+        document.querySelectorAll(`[data-tweak="${key}"]`).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setTweaks(t => ({ ...t, [key]: val }));
+        window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [key]: val } }, '*');
+      });
+    });
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const scheme = COLOR_SCHEMES[tweaks.color];
+  const radius = tweaks.cards === 'rounded' ? 18 : 8;
+  const rowPad = tweaks.density === 'compact' ? '9px 16px' : '12px 16px';
+
+  // Inject CSS variables for radius/density into app
+  const cssVars = `
+    :root {
+      --card-radius: ${radius}px;
+      --row-padding: ${rowPad};
+      --bg: ${scheme.bg};
+      --primary: ${scheme.primary};
+    }
+  `;
+
+  return (
+    <>
+      <style>{cssVars}</style>
+      <IOSDevice width={393} height={852} dark={scheme.darkMode}>
+        <VollfoodApp />
+      </IOSDevice>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('device-root')).render(<DeviceWrapper />);
+</script>
+</body>
+</html>
