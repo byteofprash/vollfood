@@ -80,7 +80,7 @@ async function submit() {
       class="mx-5 mt-5 py-4 bg-primary text-white rounded-2xl text-base font-bold tracking-wide disabled:opacity-60 transition-opacity"
       @click="submit"
     >
-      {{ mode === 'login' ? 'Enter the Kitchen' : 'Create Account' }}
+      {{ mode === 'login' ? 'Login' : 'Create Account' }}
     </button>
 
     <button
