@@ -31,8 +31,9 @@ function versionsList(recipe: any) {
 <template>
   <div class="h-screen flex flex-col bg-vf-bg">
     <VfHeader :title="category?.name ?? 'Category'" :on-back="() => useRouter().back()" />
-    <div class="flex-1 overflow-y-auto pb-4">
-      <p class="px-4 py-3 text-[13px] text-vf-muted">{{ recipes.length }} recipe{{ recipes.length !== 1 ? 's' : '' }}</p>
+    <div class="flex-1 overflow-y-auto pb-4 lg:pb-8">
+      <div class="lg:max-w-4xl lg:mx-auto lg:px-8">
+      <p class="px-4 lg:px-0 py-3 text-[13px] text-vf-muted">{{ recipes.length }} recipe{{ recipes.length !== 1 ? 's' : '' }}</p>
       <div class="border-t border-b border-vf-border">
         <VfRecipeRow
           v-for="r in recipes"
@@ -44,6 +45,7 @@ function versionsList(recipe: any) {
           No recipes yet. Be the first to add one!
         </div>
       </div>
+      </div><!-- /max-width wrapper -->
     </div>
   </div>
 </template>

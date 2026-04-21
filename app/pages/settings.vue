@@ -63,8 +63,9 @@ async function signOut() {
 
 <template>
   <div class="h-screen flex flex-col">
-    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20">
-      <div class="px-4 pt-5 pb-3">
+    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20 lg:pb-8">
+      <div class="lg:max-w-2xl lg:mx-auto lg:px-8">
+      <div class="px-4 lg:px-0 pt-5 pb-3">
         <div class="text-[22px] font-bold text-vf-text">Settings</div>
       </div>
 
@@ -188,6 +189,7 @@ async function signOut() {
       <div class="text-center px-4 py-6">
         <button class="text-red-500 text-[15px] font-semibold bg-none border-none" @click="signOut">Sign Out</button>
       </div>
+      </div><!-- /max-width wrapper -->
     </div>
     <VfTabBar />
   </div>

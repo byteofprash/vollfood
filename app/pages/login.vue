@@ -41,7 +41,8 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-vf-bg flex flex-col overflow-y-auto pb-10">
+  <div class="min-h-screen bg-vf-bg flex flex-col overflow-y-auto pb-10 lg:justify-center lg:items-center">
+    <div class="w-full lg:max-w-sm lg:w-full">
     <!-- Header -->
     <div class="px-7 pt-14 pb-8 text-center">
       <div class="text-4xl font-extrabold text-primary tracking-tight">Vollfood</div>
@@ -101,5 +102,6 @@ async function submit() {
       </div>
       <p class="text-xs text-vf-muted text-center mt-3">Ask your family admin for an invite code</p>
     </template>
+    </div><!-- /max-width wrapper -->
   </div>
 </template>

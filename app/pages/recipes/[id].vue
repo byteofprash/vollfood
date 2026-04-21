@@ -55,7 +55,8 @@ function cookLabel(min: number | null) {
       </template>
     </VfHeader>
 
-    <div class="flex-1 overflow-y-auto pb-6">
+    <div class="flex-1 overflow-y-auto pb-6 lg:pb-8">
+      <div class="lg:max-w-3xl lg:mx-auto">
       <!-- Hero -->
       <div class="h-40 bg-gradient-to-br from-primary-soft to-primary/20 flex items-center justify-center relative flex-shrink-0">
         <VfRecipePlaceholder :id="recipe?.id ?? 0" :size="64" />
@@ -240,6 +241,7 @@ function cookLabel(min: number | null) {
           </div>
         </template>
       </template>
+      </div><!-- /max-width wrapper -->
     </div>
   </div>
 </template>
