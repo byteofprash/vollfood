@@ -56,9 +56,10 @@ function versionsList(recipe: any) {
 
 <template>
   <div class="h-screen flex flex-col">
-    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20">
+    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20 lg:pb-8">
+      <div class="lg:max-w-4xl lg:mx-auto lg:px-8">
       <!-- Greeting -->
-      <div class="px-4 pt-5 pb-3 flex justify-between items-center">
+      <div class="px-4 lg:px-0 pt-5 pb-3 flex justify-between items-center">
         <div>
           <div class="text-[22px] font-bold text-vf-text">{{ greeting }}, {{ firstName }} 👋</div>
           <div class="text-[13px] text-vf-muted mt-0.5">{{ recentRecipes.length }} recent recipes</div>
@@ -123,7 +124,7 @@ function versionsList(recipe: any) {
       <!-- Categories + Recent -->
       <template v-else>
         <VfSectionLabel>Categories</VfSectionLabel>
-        <div class="grid grid-cols-2 gap-2.5 px-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 px-4 lg:px-0">
           <NuxtLink
             v-for="cat in categories"
             :key="cat.id"
@@ -151,6 +152,7 @@ function versionsList(recipe: any) {
           </div>
         </div>
       </template>
+      </div><!-- /max-width wrapper -->
     </div>
 
     <VfTabBar />

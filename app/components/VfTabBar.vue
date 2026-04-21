@@ -15,7 +15,7 @@ function isActive(tab: typeof tabs[0]) {
 </script>
 
 <template>
-  <div class="fixed bottom-0 left-0 right-0 h-[72px] bg-vf-tab border-t border-vf-border flex items-center backdrop-blur-md z-50 pb-2">
+  <div class="lg:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-vf-tab border-t border-vf-border flex items-center backdrop-blur-md z-50 pb-2">
     <NuxtLink
       v-for="tab in tabs"
       :key="tab.id"

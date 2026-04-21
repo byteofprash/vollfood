@@ -31,8 +31,9 @@ function versionsList(recipe: any) {
 
 <template>
   <div class="h-screen flex flex-col">
-    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20">
-      <div class="px-4 pt-5 pb-3 flex justify-between items-end">
+    <div class="flex-1 overflow-y-auto bg-vf-bg pb-20 lg:pb-8">
+      <div class="lg:max-w-4xl lg:mx-auto lg:px-8">
+      <div class="px-4 lg:px-0 pt-5 pb-3 flex justify-between items-end">
         <div>
           <div class="text-[22px] font-bold text-vf-text">All Recipes</div>
           <div class="text-[13px] text-vf-muted mt-0.5">{{ recipes?.length ?? 0 }} recipes</div>
@@ -40,7 +41,7 @@ function versionsList(recipe: any) {
       </div>
 
       <!-- Sort pills -->
-      <div class="flex gap-2 px-4 pb-3 overflow-x-auto">
+      <div class="flex gap-2 px-4 lg:px-0 pb-3 overflow-x-auto">
         <button
           v-for="[val, label] in [['name', 'A–Z'], ['time', 'Quickest'], ['versions', 'Most Versions']]"
           :key="val"
@@ -65,6 +66,7 @@ function versionsList(recipe: any) {
           No recipes yet.
         </div>
       </div>
+      </div><!-- /max-width wrapper -->
     </div>
     <VfTabBar />
   </div>

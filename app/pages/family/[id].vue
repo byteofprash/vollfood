@@ -38,7 +38,8 @@ function versionsList(recipe: any) {
 <template>
   <div class="h-screen flex flex-col bg-vf-bg">
     <VfHeader :title="member?.name?.split(' ')[0] ?? ''" :on-back="() => useRouter().back()" />
-    <div class="flex-1 overflow-y-auto pb-6">
+    <div class="flex-1 overflow-y-auto pb-6 lg:pb-8">
+      <div class="lg:max-w-3xl lg:mx-auto">
       <div v-if="member" class="flex items-center gap-4 px-4 py-5 border-b border-vf-border">
         <VfAvatar :name="member.name ?? ''" :initials="initials(member.name)" :hue="member.hue" :size="64" />
         <div>
@@ -58,6 +59,7 @@ function versionsList(recipe: any) {
         />
         <div v-if="!recipes.length" class="px-4 py-6 text-sm text-vf-muted">No recipes yet.</div>
       </div>
+      </div><!-- /max-width wrapper -->
     </div>
   </div>
 </template>
