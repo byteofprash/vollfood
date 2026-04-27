@@ -10,6 +10,20 @@ const stage = ref<Stage>('idle')
 const transcript = ref('')
 const error = ref('')
 
+const languages = [
+  { code: 'en-US', label: 'English (US)' },
+  { code: 'en-GB', label: 'English (UK)' },
+  { code: 'ta-IN', label: 'Tamil' },
+  { code: 'hi-IN', label: 'Hindi' },
+  { code: 'ml-IN', label: 'Malayalam' },
+  { code: 'te-IN', label: 'Telugu' },
+  { code: 'kn-IN', label: 'Kannada' },
+  { code: 'de-DE', label: 'German' },
+  { code: 'fr-FR', label: 'French' },
+  { code: 'es-ES', label: 'Spanish' },
+]
+const selectedLang = ref('en-US')
+
 interface Parsed {
   name: string
   category: string
@@ -33,7 +47,7 @@ function startRecording() {
   recognition = new SpeechRecognition()
   recognition.continuous = true
   recognition.interimResults = true
-  recognition.lang = 'en-US'
+  recognition.lang = selectedLang.value
   recognition.onresult = (e: any) => {
     transcript.value = Array.from(e.results).map((r: any) => r[0].transcript).join(' ')
   }
@@ -106,6 +120,18 @@ onUnmounted(() => recognition?.stop())
         </p>
       </div>
 
+      <!-- Language selector -->
+      <div class="w-full bg-vf-card border border-vf-border rounded-2xl px-4 py-3 flex items-center justify-between">
+        <span class="text-sm text-vf-muted font-medium">Language</span>
+        <select
+          v-model="selectedLang"
+          class="bg-transparent text-sm font-semibold text-vf-text outline-none cursor-pointer"
+        >
+          <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.label }}</option>
+        </select>
+      </div>
+      <p class="text-xs text-vf-muted text-center -mt-3">English words mid-sentence are supported in any language</p>
+
       <button
         class="w-[120px] h-[120px] rounded-full bg-primary flex items-center justify-center shadow-[0_8px_32px_rgba(200,98,42,0.33)] transition-transform hover:scale-105 active:scale-95 border-none"
         @click="startRecording"
@@ -144,7 +170,7 @@ onUnmounted(() => recognition?.stop())
 
       <p class="text-primary text-[13px] font-semibold flex items-center gap-1.5">
         <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
-        Listening…
+        Listening… <span class="text-vf-muted font-normal">({{ languages.find(l => l.code === selectedLang)?.label }})</span>
       </p>
 
       <div class="w-full bg-vf-card rounded-2xl p-4 border border-vf-border min-h-[120px] flex-1">
