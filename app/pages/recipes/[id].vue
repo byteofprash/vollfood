@@ -38,13 +38,12 @@ type ForkStage = 'idle' | 'recording' | 'processing' | 'review'
 const mode = ref<Mode>('view')
 const showSheet = ref(false)
 
-const myVersion = computed(() => versions.value.find((v: any) => v.author?.id === user.value?.id))
 const canEditFork = computed(() => {
   if (!user.value || !fork.value) return false
   if (fork.value.author?.id === user.value.id) return true
   return profile.value?.role === 'admin' || profile.value?.role === 'editor'
 })
-const canAddVersion = computed(() => !!user.value && !myVersion.value)
+const canAddVersion = computed(() => !!user.value)
 
 // ── Edit mode ────────────────────────────────────────────────────────────────
 const editForm = reactive({
@@ -103,6 +102,7 @@ const forkTranscript = ref('')
 const forkError = ref('')
 const forkShowTranscript = ref(false)
 const forkNote = ref('')
+const forkVersionName = ref('')
 const showBaseRecipe = ref(true)
 
 interface ForkParsed { ingredients: string[]; steps: string[] }
@@ -128,6 +128,7 @@ function startFork() {
   forkTranscript.value = ''
   forkError.value = ''
   forkNote.value = ''
+  forkVersionName.value = profile.value?.name ?? ''
   forkParsed.value = null
   forkStage.value = 'idle'
   showSheet.value = false
@@ -192,6 +193,7 @@ async function saveFork() {
     const { error: vErr } = await supabase.from('recipe_versions').insert({
       recipe_id: route.params.id,
       author_id: user.value.id,
+      version_name: forkVersionName.value || null,
       note: forkNote.value || null,
       ingredients: forkParsed.value.ingredients,
       steps: forkParsed.value.steps,
@@ -305,7 +307,7 @@ onUnmounted(() => recognition?.stop())
                 :class="i === forkIndex ? 'text-primary font-bold' : 'text-vf-mid font-medium'"
                 class="text-[13px] whitespace-nowrap"
               >
-                {{ v.author?.name.split(' ')[0] ?? 'Unknown' }}
+                {{ (v.version_name ?? v.author?.name ?? 'Unknown').split(' ')[0] }}
               </span>
             </button>
           </div>
@@ -510,7 +512,7 @@ onUnmounted(() => recognition?.stop())
                 :hue="fork.author.hue"
                 :size="20"
               />
-              <span class="text-sm font-semibold text-vf-text">Based on {{ fork?.author?.name?.split(' ')[0] }}'s version</span>
+              <span class="text-sm font-semibold text-vf-text">Based on {{ (fork?.version_name ?? fork?.author?.name ?? 'this')?.split(' ')[0] }}'s version</span>
             </div>
             <svg :class="showBaseRecipe ? 'rotate-180' : ''" class="transition-transform text-vf-muted" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -606,15 +608,23 @@ onUnmounted(() => recognition?.stop())
           <span class="text-[13px] font-semibold text-primary">Changes applied! Add a note and save your version.</span>
         </div>
 
-        <!-- Note -->
+        <!-- Version name + Note -->
         <div class="border-t border-b border-vf-border">
+          <div class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border">
+            <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Version name</span>
+            <input
+              v-model="forkVersionName"
+              class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right flex-1 ml-4"
+              placeholder="e.g. Grandma Kamala"
+            />
+          </div>
           <div class="flex items-start gap-3 px-4 py-3.5">
-            <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0 pt-1">My Note</span>
+            <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0 pt-1">Note</span>
             <textarea
               v-model="forkNote"
               rows="2"
               class="flex-1 text-[15px] text-vf-text font-medium bg-transparent outline-none resize-none text-right leading-relaxed"
-              placeholder="What makes your version special?"
+              placeholder="What makes this version special?"
             />
           </div>
         </div>
@@ -734,7 +744,7 @@ onUnmounted(() => recognition?.stop())
             </div>
             <div>
               <p class="text-[15px] font-semibold text-vf-text">Add my version</p>
-              <p class="text-xs text-vf-muted mt-0.5">Branch from {{ fork?.author?.name?.split(' ')[0] }}'s version — narrate what's different</p>
+              <p class="text-xs text-vf-muted mt-0.5">Branch from {{ (fork?.version_name ?? fork?.author?.name ?? 'this version')?.split(' ')[0] }}'s version — narrate what's different</p>
             </div>
           </button>
 
