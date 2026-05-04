@@ -4,11 +4,15 @@ definePageMeta({ middleware: ['auth'] })
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()
+const { profile, fetch: fetchProfile } = useProfile()
+
+await fetchProfile()
 
 type Stage = 'idle' | 'recording' | 'processing' | 'review'
 const stage = ref<Stage>('idle')
 const transcript = ref('')
 const error = ref('')
+const authorName = ref(profile.value?.name ?? '')
 
 const languages = [
   { code: 'en-US', label: 'English (US)' },
@@ -93,6 +97,7 @@ async function saveRecipe() {
     await supabase.from('recipe_versions').insert({
       recipe_id: recipe.id,
       author_id: user.value.id,
+      note: authorName.value || null,
       ingredients: parsed.value.ingredients,
       steps: parsed.value.steps,
       is_original: true,
@@ -215,6 +220,14 @@ onUnmounted(() => recognition?.stop())
         >
           <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide">{{ label }}</span>
           <span class="text-[15px] text-vf-text font-medium">{{ value }}</span>
+        </div>
+        <div class="flex justify-between items-center px-4 py-3.5">
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide">Author</span>
+          <input
+            v-model="authorName"
+            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right"
+            placeholder="Your name"
+          />
         </div>
       </div>
 
