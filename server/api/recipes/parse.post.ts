@@ -51,7 +51,8 @@ Rules:
     throw createError({ statusCode: 500, message: `Anthropic API error: ${e?.message ?? 'unknown'}` })
   }
 
-  const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+  const raw = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+  const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
 
   let parsed: any
   try {
