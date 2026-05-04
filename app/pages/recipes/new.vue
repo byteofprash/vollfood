@@ -13,6 +13,7 @@ const stage = ref<Stage>('idle')
 const transcript = ref('')
 const error = ref('')
 const authorName = ref(profile.value?.name ?? '')
+const showTranscript = ref(false)
 
 const languages = [
   { code: 'en-US', label: 'English (US)' },
@@ -63,8 +64,7 @@ function startRecording() {
   stage.value = 'recording'
 }
 
-async function stopAndParse() {
-  recognition?.stop()
+async function parseTranscript() {
   stage.value = 'processing'
   try {
     const res = await $fetch('/api/recipes/parse', {
@@ -73,10 +73,16 @@ async function stopAndParse() {
     })
     parsed.value = res as Parsed
     stage.value = 'review'
+    showTranscript.value = false
   } catch (e: any) {
     error.value = e.message ?? 'Failed to parse recipe.'
     stage.value = 'idle'
   }
+}
+
+async function stopAndParse() {
+  recognition?.stop()
+  await parseTranscript()
 }
 
 async function saveRecipe() {
@@ -89,7 +95,12 @@ async function saveRecipe() {
 
     const { data: recipe, error: recipeErr } = await supabase
       .from('recipes')
-      .insert({ name: parsed.value.name, cooktime: parsed.value.cooktime, serves: parsed.value.serves, family_id: familyId })
+      .insert({
+        name: parsed.value.name,
+        cooktime: Number.isFinite(parsed.value.cooktime) ? parsed.value.cooktime : null,
+        serves: Number.isFinite(parsed.value.serves) ? parsed.value.serves : null,
+        family_id: familyId,
+      })
       .select('id')
       .single()
     if (recipeErr) throw recipeErr
@@ -209,51 +220,141 @@ onUnmounted(() => recognition?.stop())
           <circle cx="8" cy="8" r="7" fill="#C8622A"/>
           <path d="M5 8l2.5 2.5L11 5.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span class="text-[13px] font-semibold text-primary">Recipe parsed! Review and save.</span>
+        <span class="text-[13px] font-semibold text-primary">Recipe parsed! Review and edit, then save.</span>
       </div>
 
+      <!-- Metadata -->
       <div class="border-t border-b border-vf-border">
-        <div
-          v-for="[label, value] in [['Name', parsed.name], ['Category', parsed.category], ['Cook Time', parsed.cooktime ? `${parsed.cooktime} min` : '—'], ['Serves', parsed.serves ?? '—']]"
-          :key="label"
-          class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border last:border-0"
-        >
-          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide">{{ label }}</span>
-          <span class="text-[15px] text-vf-text font-medium">{{ value }}</span>
+        <div class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border">
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Name</span>
+          <input
+            v-model="parsed.name"
+            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right flex-1 ml-4"
+            placeholder="Recipe name"
+          />
+        </div>
+        <div class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border">
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Category</span>
+          <input
+            v-model="parsed.category"
+            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right flex-1 ml-4"
+            placeholder="e.g. Curry, Dessert"
+          />
+        </div>
+        <div class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border">
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Cook Time</span>
+          <div class="flex items-center gap-1.5">
+            <input
+              v-model.number="parsed.cooktime"
+              type="number"
+              min="0"
+              class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right w-16"
+              placeholder="—"
+            />
+            <span class="text-sm text-vf-muted">min</span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center px-4 py-3.5 border-b border-vf-border">
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Serves</span>
+          <input
+            v-model.number="parsed.serves"
+            type="number"
+            min="1"
+            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right w-16"
+            placeholder="—"
+          />
         </div>
         <div class="flex justify-between items-center px-4 py-3.5">
-          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide">Author</span>
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide shrink-0">Author</span>
           <input
             v-model="authorName"
-            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right"
+            class="text-[15px] text-vf-text font-medium bg-transparent outline-none text-right flex-1 ml-4"
             placeholder="Your name"
           />
         </div>
       </div>
 
+      <!-- Ingredients -->
       <VfSectionLabel>Ingredients</VfSectionLabel>
       <div class="border-t border-b border-vf-border">
         <div
-          v-for="(ing, i) in parsed.ingredients"
+          v-for="(_, i) in parsed.ingredients"
           :key="i"
-          class="flex items-center gap-2.5 px-4 py-[11px] border-b border-vf-border last:border-0"
+          class="flex items-center gap-2.5 px-4 py-[11px] border-b border-vf-border"
         >
           <div class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-          <span class="text-sm text-vf-text">{{ ing }}</span>
+          <input
+            v-model="parsed.ingredients[i]"
+            class="flex-1 text-sm text-vf-text bg-transparent outline-none"
+            placeholder="Ingredient"
+          />
+          <button
+            class="text-vf-muted text-xl leading-none pl-2 hover:text-red-400 transition-colors"
+            @click="parsed.ingredients.splice(i, 1)"
+          >×</button>
         </div>
+        <button
+          class="w-full px-4 py-3 text-sm text-primary font-semibold text-left hover:bg-primary-bg transition-colors"
+          @click="parsed.ingredients.push('')"
+        >+ Add ingredient</button>
       </div>
 
+      <!-- Steps -->
       <VfSectionLabel>Steps</VfSectionLabel>
       <div class="border-t border-b border-vf-border">
         <div
-          v-for="(step, i) in parsed.steps"
+          v-for="(_, i) in parsed.steps"
           :key="i"
-          class="flex gap-3 items-start px-4 py-3 border-b border-vf-border last:border-0"
+          class="flex gap-3 items-start px-4 py-3 border-b border-vf-border"
         >
-          <div class="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+          <div class="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-1">
             {{ i + 1 }}
           </div>
-          <span class="text-sm text-vf-text leading-[1.55] pt-0.5">{{ step }}</span>
+          <textarea
+            v-model="parsed.steps[i]"
+            rows="2"
+            class="flex-1 text-sm text-vf-text leading-[1.55] bg-transparent outline-none resize-none pt-0.5"
+            placeholder="Step description"
+          />
+          <button
+            class="text-vf-muted text-xl leading-none mt-0.5 hover:text-red-400 transition-colors"
+            @click="parsed.steps.splice(i, 1)"
+          >×</button>
+        </div>
+        <button
+          class="w-full px-4 py-3 text-sm text-primary font-semibold text-left hover:bg-primary-bg transition-colors"
+          @click="parsed.steps.push('')"
+        >+ Add step</button>
+      </div>
+
+      <!-- Collapsible transcript -->
+      <div class="border-t border-vf-border mt-2">
+        <button
+          class="w-full flex justify-between items-center px-4 py-3.5"
+          @click="showTranscript = !showTranscript"
+        >
+          <span class="text-xs font-semibold text-vf-muted uppercase tracking-wide">What you narrated</span>
+          <svg
+            :class="showTranscript ? 'rotate-180' : ''"
+            class="transition-transform text-vf-muted"
+            width="16" height="16" viewBox="0 0 16 16" fill="none"
+          >
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div v-if="showTranscript" class="px-4 pb-4 flex flex-col gap-3">
+          <textarea
+            v-model="transcript"
+            rows="5"
+            class="w-full text-sm text-vf-text bg-vf-card border border-vf-border rounded-xl p-3 outline-none resize-none leading-relaxed focus:border-primary transition-colors"
+            placeholder="Your narration will appear here…"
+          />
+          <button
+            class="py-3 rounded-xl border-[1.5px] border-primary text-primary text-sm font-semibold hover:bg-primary-bg transition-colors"
+            @click="parseTranscript"
+          >
+            Parse Again
+          </button>
         </div>
       </div>
 
