@@ -55,17 +55,18 @@ const recipes = [
 ]
 
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient(event)
   const user = await serverSupabaseUser(event)
-
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
+
+  const client = await serverSupabaseClient(event)   // user-JWT for RLS-enforced ops
+  const admin = serverSupabaseServiceRole(event)     // service role only for families INSERT
 
   const { data: profile } = await client.from('profiles').select('family_id, name').eq('id', user.id).single()
 
   let familyId = profile?.family_id ?? null
   if (!familyId) {
-    const admin = serverSupabaseServiceRole(event)
     const firstName = (profile?.name ?? user.email ?? 'My').split(/[\s@]/)[0]
+    // families has no INSERT policy — service role required here
     const { data: newFamily, error: famErr } = await admin
       .from('families')
       .insert({ name: `${firstName}'s Family`, invite_code: generateInviteCode() })
@@ -73,12 +74,18 @@ export default defineEventHandler(async (event) => {
       .single()
     if (famErr) throw createError({ statusCode: 500, message: famErr.message })
     familyId = newFamily.id
-    await admin.from('profiles').update({ family_id: familyId, role: 'admin' }).eq('id', user.id)
+    // Profile UPDATE: user-JWT is fine ("users update own profile" policy)
+    const { error: profErr } = await client
+      .from('profiles')
+      .update({ family_id: familyId, role: 'admin' })
+      .eq('id', user.id)
+    if (profErr) throw createError({ statusCode: 500, message: profErr.message })
   }
 
   const { count } = await client.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
   if ((count ?? 0) > 0) throw createError({ statusCode: 400, message: 'Family already has recipes.' })
 
+  // All data inserts go through user-JWT — RLS enforces family scoping
   const { data: cats, error: catErr } = await client
     .from('categories')
     .insert(categories.map(c => ({ ...c, family_id: familyId })))
