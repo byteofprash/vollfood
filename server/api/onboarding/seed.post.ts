@@ -1,4 +1,4 @@
-import { serverSupabaseClient, serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
 
 function generateInviteCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -55,16 +55,17 @@ const recipes = [
 ]
 
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient(event)
   const user = await serverSupabaseUser(event)
-
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-  const { data: profile } = await client.from('profiles').select('family_id, name').eq('id', user.id).single()
+  // Use service role for all writes — server is trusted and RLS would race-condition
+  // after profile.family_id is written in the same request.
+  const admin = serverSupabaseServiceRole(event)
+
+  const { data: profile } = await admin.from('profiles').select('family_id, name').eq('id', user.id).single()
 
   let familyId = profile?.family_id ?? null
   if (!familyId) {
-    const admin = serverSupabaseServiceRole(event)
     const firstName = (profile?.name ?? user.email ?? 'My').split(/[\s@]/)[0]
     const { data: newFamily, error: famErr } = await admin
       .from('families')
@@ -76,10 +77,10 @@ export default defineEventHandler(async (event) => {
     await admin.from('profiles').update({ family_id: familyId, role: 'admin' }).eq('id', user.id)
   }
 
-  const { count } = await client.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
+  const { count } = await admin.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
   if ((count ?? 0) > 0) throw createError({ statusCode: 400, message: 'Family already has recipes.' })
 
-  const { data: cats, error: catErr } = await client
+  const { data: cats, error: catErr } = await admin
     .from('categories')
     .insert(categories.map(c => ({ ...c, family_id: familyId })))
     .select('id, name')
@@ -87,7 +88,7 @@ export default defineEventHandler(async (event) => {
 
   const catMap: Record<string, string> = Object.fromEntries((cats ?? []).map((c: any) => [c.name, c.id]))
 
-  const { data: inserted, error: rErr } = await client
+  const { data: inserted, error: rErr } = await admin
     .from('recipes')
     .insert(recipes.map(r => ({ name: r.name, cooktime: r.cooktime, serves: r.serves, family_id: familyId, category_id: catMap[r.category] ?? null })))
     .select('id, name')
@@ -95,7 +96,7 @@ export default defineEventHandler(async (event) => {
 
   const recipeMap: Record<string, string> = Object.fromEntries((inserted ?? []).map((r: any) => [r.name, r.id]))
 
-  const { error: vErr } = await client.from('recipe_versions').insert(
+  const { error: vErr } = await admin.from('recipe_versions').insert(
     recipes.map(r => ({ recipe_id: recipeMap[r.name], author_id: user.id, ingredients: r.ingredients, steps: r.steps, is_original: true }))
   )
   if (vErr) throw createError({ statusCode: 500, message: vErr.message })
