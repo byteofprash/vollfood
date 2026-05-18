@@ -14,10 +14,24 @@ onMounted(async () => {
     return
   }
 
+  // The Supabase browser client may have already auto-exchanged the code
+  // (consuming the PKCE verifier) before onMounted fires. If so, just redirect.
+  const { data: { session: existing } } = await supabase.auth.getSession()
+  if (existing) {
+    await navigateTo('/')
+    return
+  }
+
   const { error: e } = await supabase.auth.exchangeCodeForSession(code)
 
   if (e) {
-    error.value = e.message
+    // Race: auto-exchange may have completed concurrently — check once more before showing error
+    const { data: { session: raceSession } } = await supabase.auth.getSession()
+    if (raceSession) {
+      await navigateTo('/')
+    } else {
+      error.value = e.message
+    }
   } else {
     await navigateTo('/')
   }
