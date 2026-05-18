@@ -11,6 +11,11 @@ export default defineNuxtConfig({
 
   supabase: {
     redirect: false, // we handle redirect via our own middleware
+    clientOptions: {
+      auth: {
+        detectSessionInUrl: false, // prevent SSR from auto-exchanging the PKCE code (verifier lives in browser localStorage)
+      },
+    },
   },
 
   runtimeConfig: {
