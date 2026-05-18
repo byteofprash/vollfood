@@ -1,4 +1,4 @@
-import { serverSupabaseClient, serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 
 function generateInviteCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -58,34 +58,27 @@ export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-  const client = await serverSupabaseClient(event)   // user-JWT for RLS-enforced ops
-  const admin = serverSupabaseServiceRole(event)     // service role only for families INSERT
+  const client = await serverSupabaseClient(event)
 
   const { data: profile } = await client.from('profiles').select('family_id, name').eq('id', user.id).single()
 
   let familyId = profile?.family_id ?? null
   if (!familyId) {
+    // setup_family_for_user is a SECURITY DEFINER RPC that atomically creates the family
+    // and updates the caller's profile in one transaction. After it returns, my_family_id()
+    // and my_role() will see the committed values for all subsequent RLS checks.
     const firstName = (profile?.name ?? user.email ?? 'My').split(/[\s@]/)[0]
-    // families has no INSERT policy — service role required here
-    const { data: newFamily, error: famErr } = await admin
-      .from('families')
-      .insert({ name: `${firstName}'s Family`, invite_code: generateInviteCode() })
-      .select('id')
-      .single()
+    const { data: newFamilyId, error: famErr } = await client.rpc('setup_family_for_user', {
+      p_family_name: `${firstName}'s Family`,
+      p_invite_code: generateInviteCode(),
+    })
     if (famErr) throw createError({ statusCode: 500, message: famErr.message })
-    familyId = newFamily.id
-    // Profile UPDATE: user-JWT is fine ("users update own profile" policy)
-    const { error: profErr } = await client
-      .from('profiles')
-      .update({ family_id: familyId, role: 'admin' })
-      .eq('id', user.id)
-    if (profErr) throw createError({ statusCode: 500, message: profErr.message })
+    familyId = newFamilyId
   }
 
   const { count } = await client.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
   if ((count ?? 0) > 0) throw createError({ statusCode: 400, message: 'Family already has recipes.' })
 
-  // All data inserts go through user-JWT — RLS enforces family scoping
   const { data: cats, error: catErr } = await client
     .from('categories')
     .insert(categories.map(c => ({ ...c, family_id: familyId })))
