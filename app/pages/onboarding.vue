@@ -2,11 +2,12 @@
 definePageMeta({ middleware: ['auth'] })
 
 const { profile, fetch: fetchProfile } = useProfile()
+const user = useSupabaseUser()
 await fetchProfile()
 
 const router = useRouter()
 
-const onboardedCookie = useCookie(`vf_ob_${profile.value?.family_id ?? 'x'}`, {
+const onboardedCookie = useCookie(`vf_ob_${user.value?.id ?? 'x'}`, {
   maxAge: 60 * 60 * 24 * 365 * 5,
   sameSite: 'lax',
 })
@@ -38,7 +39,10 @@ async function seedAndGo() {
   }
 }
 
-function skipAndGo() {
+async function skipAndGo() {
+  try {
+    await $fetch('/api/onboarding/skip', { method: 'POST' })
+  } catch { /* best effort — family creation; continue regardless */ }
   onboardedCookie.value = '1'
   router.push('/')
 }

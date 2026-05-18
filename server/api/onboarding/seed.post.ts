@@ -1,4 +1,8 @@
-import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole, serverSupabaseUser } from '#supabase/server'
+
+function generateInviteCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase()
+}
 
 const categories = [
   { name: 'Breakfast',     accent: '#F59E0B', sort_order: 1 },
@@ -56,10 +60,21 @@ export default defineEventHandler(async (event) => {
 
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
-  const { data: profile } = await client.from('profiles').select('family_id').eq('id', user.id).single()
-  if (!profile?.family_id) throw createError({ statusCode: 400, message: 'You must belong to a family to seed data.' })
+  const { data: profile } = await client.from('profiles').select('family_id, name').eq('id', user.id).single()
 
-  const familyId = profile.family_id
+  let familyId = profile?.family_id ?? null
+  if (!familyId) {
+    const admin = serverSupabaseServiceRole(event)
+    const firstName = (profile?.name ?? user.email ?? 'My').split(/[\s@]/)[0]
+    const { data: newFamily, error: famErr } = await admin
+      .from('families')
+      .insert({ name: `${firstName}'s Family`, invite_code: generateInviteCode() })
+      .select('id')
+      .single()
+    if (famErr) throw createError({ statusCode: 500, message: famErr.message })
+    familyId = newFamily.id
+    await admin.from('profiles').update({ family_id: familyId, role: 'admin' }).eq('id', user.id)
+  }
 
   const { count } = await client.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
   if ((count ?? 0) > 0) throw createError({ statusCode: 400, message: 'Family already has recipes.' })

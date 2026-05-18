@@ -26,6 +26,9 @@ async function submit() {
       const { error: e } = await supabase.auth.signUp({
         email: email.value,
         password: password.value,
+        options: {
+          emailRedirectTo: `${window.location.origin}/confirm`,
+        },
       })
       if (e) throw e
       if (inviteCode.value) {
