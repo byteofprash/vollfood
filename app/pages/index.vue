@@ -13,6 +13,11 @@ const searching = ref(false)
 
 await fetchProfile()
 
+const onboardedCookie = useCookie(`vf_ob_${profile.value?.family_id ?? 'x'}`, {
+  maxAge: 60 * 60 * 24 * 365 * 5,
+  sameSite: 'lax',
+})
+
 const [catRes, recipeRes] = await Promise.all([
   supabase.from('categories').select('*').order('sort_order'),
   supabase
@@ -23,6 +28,10 @@ const [catRes, recipeRes] = await Promise.all([
 ])
 categories.value = catRes.data ?? []
 recentRecipes.value = recipeRes.data ?? []
+
+if (!onboardedCookie.value && categories.value.length === 0 && recentRecipes.value.length === 0 && profile.value?.family_id) {
+  await navigateTo('/onboarding')
+}
 
 watch(search, async (q) => {
   if (!q.trim()) { searchResults.value = []; return }
