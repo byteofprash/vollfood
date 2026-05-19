@@ -58,23 +58,30 @@ export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
 
+  console.log('[seed] user.id:', user.id)
+
   const client = await serverSupabaseClient(event)
 
-  const { data: profile } = await client.from('profiles').select('family_id, name').eq('id', user.id).single()
+  const { data: profile, error: profileErr } = await client.from('profiles').select('family_id, name, role').eq('id', user.id).single()
+  console.log('[seed] initial profile:', JSON.stringify(profile), 'err:', profileErr?.message)
 
   let familyId = profile?.family_id ?? null
   if (!familyId) {
-    // setup_family_for_user is a SECURITY DEFINER RPC that atomically creates the family
-    // and updates the caller's profile in one transaction. After it returns, my_family_id()
-    // and my_role() will see the committed values for all subsequent RLS checks.
     const firstName = (profile?.name ?? user.email ?? 'My').split(/[\s@]/)[0]
     const { data: newFamilyId, error: famErr } = await client.rpc('setup_family_for_user', {
       p_family_name: `${firstName}'s Family`,
       p_invite_code: generateInviteCode(),
     })
+    console.log('[seed] rpc result:', newFamilyId, 'err:', famErr?.message)
     if (famErr) throw createError({ statusCode: 500, message: famErr.message })
     familyId = newFamilyId
+
+    // Re-read profile to confirm the RPC updated it
+    const { data: postRpcProfile } = await client.from('profiles').select('family_id, role').eq('id', user.id).single()
+    console.log('[seed] profile after rpc:', JSON.stringify(postRpcProfile))
   }
+
+  console.log('[seed] inserting categories with family_id:', familyId)
 
   const { count } = await client.from('recipes').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
   if ((count ?? 0) > 0) throw createError({ statusCode: 400, message: 'Family already has recipes.' })
@@ -83,6 +90,7 @@ export default defineEventHandler(async (event) => {
     .from('categories')
     .insert(categories.map(c => ({ ...c, family_id: familyId })))
     .select('id, name')
+  console.log('[seed] categories insert err:', catErr?.message, 'cats:', cats?.length)
   if (catErr) throw createError({ statusCode: 500, message: catErr.message })
 
   const catMap: Record<string, string> = Object.fromEntries((cats ?? []).map((c: any) => [c.name, c.id]))
